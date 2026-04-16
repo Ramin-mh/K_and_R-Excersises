@@ -5,26 +5,24 @@
 #define MAXLINES 5000 /* max #lines to be sorted */
 #define MAXLEN 1000 /* max #chars in a line */
 
-char *lineptr[MAXLINES]; /* pointers to text lines */
+int numeric = 0; /* 1 if numeric sort */
+int reverse = 0; /* -1 if reverse sort (descending)*/
+int nocases = 0; /* 1 if fold upper and lower together */
+int directory = 0; /* 1 if directory order */
 
 int readlines(char *lineptr[], int nlines);
 void writelines(char *lineptr[], int nlines);
-void quick_sort(void *lineptr[], int left, int right, int (*comp)(void *, void *, int, int, int), int, int, int);
-void swap(void *v[], int, int);
-int numcmp(char *, char *);
-int string_cmp(char *s1, char *s2, int nocases, int directory_order);
-int cmp_str(void *, void *, int, int, int);
-int cmp_num(void *, void *, int, int, int);
-void tolower_line(char *s);
+void quick_sort(void *lineptr[], int left, int right, int (*comp)(void *, void *));
+int cmp_str(void *, void *);
+int cmp_num(void *, void *);
+void free_lineptr(char *lineptr[], int nlines);
 
 /* sort input lines */
 int main(int argc, char *argv[])
 {
+    char *lineptr[MAXLINES]; /* pointer array to each lines */
     int nlines; /* number of input lines read */
-    int numeric = 0; /* 1 if numeric sort */
-    int multiplier = 1; /* -1 if reverse sort (descending)*/
-    int nocases = 0; /* 1 if fold upper and lower together */
-    int directory_order = 0; /* 1 if directory order */
+    
     char *str;
     int i;
 
@@ -42,13 +40,13 @@ int main(int argc, char *argv[])
                     numeric = 1;
                     break;
                 case 'r':
-                    multiplier = -1;
+                    reverse = 1;
                     break;
                 case 'f':
                     nocases = 1;
                     break;
                 case 'd':
-                    directory_order = 1;
+                    directory = 1;
                     break;
                 default:
                 fprintf(stderr, "invalid argument\n");
@@ -59,19 +57,56 @@ int main(int argc, char *argv[])
     }
 
     if ((nlines = readlines(lineptr, MAXLINES)) >= 0) {
-        quick_sort((void**) lineptr, 0, nlines-1, (int (*)(void*,void*,int,int, int))(numeric? cmp_num : cmp_str), multiplier, nocases, directory_order);
+        quick_sort((void **)lineptr, 0, nlines-1, (int (*)(void*,void*))(numeric? cmp_num : cmp_str));
         writelines(lineptr, nlines);
+        free_lineptr(lineptr, nlines);
         return 0;
     }
     else {
         printf("input too big to sort\n");
+        free_lineptr(lineptr, nlines);
         return 1;
     }
 }
 
-/* quick_sort: sort v[left]...v[right] into increasing order */
-void quick_sort(void *v[], int left, int right,int (*comp)(void *, void *, int, int, int), int multiplier, int nocases, int directory_order)
+int readlines(char **arr, int maxlines){
+    int nlines, len;
+    char *line;
+    char *p;
+    size_t cap = 0;
+
+    nlines = 0;
+    while ((len = getline(&line, &cap, stdin)) > 0){
+        if (nlines >= maxlines || (p = malloc(sizeof(char) * (len + 1))) == NULL){
+            return -1;
+        }
+        else {
+            strcpy(p, line);
+            free(line);
+            arr[nlines++] = p;            
+        }
+    }
+
+    return nlines;   
+}
+
+void writelines(char **arr, int nlines){
+    int i;
+    for (i = 0; i < nlines; i++){
+        printf("%s", arr[i]);
+    }
+}
+
+void swap(void *v[], int i, int j)
 {
+    void *temp;
+
+    temp = v[i];
+    v[i] = v[j];
+    v[j] = temp;
+}
+
+void quick_sort(void *v[], int left, int right,int (*comp)(void *, void *)){
     int i, last;
 
     if (left >= right){
@@ -80,17 +115,17 @@ void quick_sort(void *v[], int left, int right,int (*comp)(void *, void *, int, 
     swap(v, left, (left + right)/2);
     last = left;
     for (i = left+1; i <= right; i++){
-        if ((*comp)(v[i], v[left], multiplier, nocases, directory_order) < 0){
+        if ((*comp)(v[i], v[left]) < 0){
             swap(v, ++last, i);
         }
     }
     swap(v, left, last);
-    quick_sort(v, left, last-1, comp, multiplier, nocases, directory_order);
-    quick_sort(v, last+1, right, comp, multiplier, nocases, directory_order);
+    quick_sort(v, left, last-1, comp);
+    quick_sort(v, last+1, right, comp);
 }
 
 /* numcmp: compare s1 and s2 numerically */
-int numcmp(char *s1, char *s2)
+int numcmp(const char *s1, const char *s2)
 {
     double v1, v2;
 
@@ -107,59 +142,6 @@ int numcmp(char *s1, char *s2)
     }
 }
 
-void swap(void *v[], int i, int j)
-{
-    void *temp;
-
-    temp = v[i];
-    v[i] = v[j];
-    v[j] = temp;
-}
-
-int cmp_str(void *s1, void *s2, int multiplier, int nocases, int directory_order){
-    return (string_cmp((char *)s1, (char *)s2, nocases, directory_order)) * multiplier;
-}
-
-int cmp_num(void *s1, void *s2, int multiplier, int nocases, int directory_order){
-        return (numcmp((char *)s1, (char *)s2)) * multiplier;
-}
-
-int readlines(char **arr, int maxlines){
-    int nlines, len;
-    char *line;
-    size_t size = MAXLEN;
-    char *p;
-
-    nlines = 0;
-    while ((len = getline(&line, &size, stdin)) > 0){
-        if (nlines >= maxlines || (p = malloc(sizeof(char) * (len + 1))) == NULL){
-            return -1;
-        }
-        else {
-            strcpy(p, line);
-            arr[nlines++] = p;            
-        }
-    }
-
-    return nlines;   
-}
-
-void writelines(char **arr, int nlines){
-    int i;
-    for (i = 0; i < nlines; i++){
-        printf("%s\n", arr[i]);
-    }
-}
-
-void tolower_line(char *s){
-    while (*s != '\0'){
-        if (*s > 'A' && *s < 'Z'){
-            *s += 32;
-        }
-        s++;
-    }
-}
-
 int isdir(int c){
     return (c >= 'a' && c <= 'z') ||
            (c >= 'A' && c <= 'Z') ||
@@ -167,10 +149,10 @@ int isdir(int c){
            c == ' ';
 }
 
-int string_cmp(char *s1, char *s2, int nocases, int directory_order){
+int string_cmp(const char *s1, const char *s2){
     int c1, c2;
     while (1){
-        if (directory_order){
+        if (directory){
             if (!isdir(*s1)) s1++;
             if (!isdir(*s2)) s2++;
         }
@@ -193,5 +175,27 @@ int string_cmp(char *s1, char *s2, int nocases, int directory_order){
 
         s1++;
         s2++;
+    }
+}
+
+int cmp_str(void *s1, void *s2){
+    if (reverse){
+        return string_cmp((char *)s2, (char *)s1);
+    }
+    return string_cmp((char *)s1, (char *)s2);
+}
+
+int cmp_num(void *s1, void *s2){
+    if (reverse){
+        return numcmp((char *)s1, (char *)s2);
+    }
+    return numcmp((char *)s1, (char *)s2);
+}
+
+void free_lineptr(char *lineptr[], int nlines){
+    int i;
+
+    for (i = 0; i < nlines; i++) {
+        free(lineptr[i]);
     }
 }
