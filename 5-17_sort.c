@@ -7,7 +7,7 @@
 #define MAXFIELDS 10 /* max #fields */
 
 int nfields = 0;
-int field_index[MAXFIELDS];
+int fields[MAXFIELDS];
 int numeric[MAXFIELDS];
 int reverse[MAXFIELDS];
 int nocases[MAXFIELDS];
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]){
     char *lineptr[MAXLINES]; /* pointer array to each lines */
     int nlines; /* number of input lines read */
     
-    char *str;
+    char *str, *p;
     int i, n;
 
     for (i = 1; i < argc; i++){
@@ -36,21 +36,35 @@ int main(int argc, char *argv[]){
             fprintf(stderr, "invalid argument\n");
             return 1;
         }
+        str++;
 
-        if ((n = atoi(str + 1)) > 0){
-            if (nfields > 0 && field_index[nfields-1] == 0){
+        // add field to fields, and check for clarity
+        p = str;
+        if ((n = atoi(p)) > 0){
+            if (nfields > 0 && fields[nfields-1] == 0){
                 fprintf(stderr, "invalid argument\n");
                 return 1;
             }
-            field_index[nfields] = n;
-            str++;
+            fields[nfields] = n;
+
+            while (*p >= '0' && *p <= '9'){
+                p++;               
+            }
+            str = p;
+            
         }
-        else if (nfields > 0 && field_index[nfields-1] != 0){
+        else if (n < 0 || (nfields > 0 && fields[nfields-1] != 0)){
             fprintf(stderr, "invalid argument\n");
             return 1;
         }
 
-        while (*(++str) != '\0'){
+        // handle exceeding array size
+        if (nfields >= MAXFIELDS || fields[nfields] > MAXFIELDS){
+                fprintf(stderr, "maximum no.of fields exceeded or field number greater than maximum allowed no.of fields given, exititng...\n");
+                return 1;
+        }
+
+        while (*str != '\0'){
             switch(*str){
                 case 'n':
                     numeric[nfields] = 1;
@@ -68,6 +82,7 @@ int main(int argc, char *argv[]){
                 fprintf(stderr, "invalid argument\n");
                 return 1;
             }
+            str++;
         }
 
         if (n > 0) nfields++;
@@ -364,9 +379,8 @@ int fieldcmp(char *s1, char *s2){
     char *s2_start, *s2_end;
     
     for (cpf = 1; cpf <= nfields; cpf++){
-        for (i = 0; field_index[i] != cpf; i++);
-        cpf_index = i; // i now becomes the index which can be used to call all flags regarding i+1 th field
-        field = i + 1; // this is the current field as the index is according to the no.of fields
+        cpf_index = cpf - 1; // index of flags according to the priority
+        field = fields[cpf_index]; // field according to the priority
 
         find_field(s1, &s1_start, &s1_end, field);
         find_field(s2, &s2_start, &s2_end, field);
