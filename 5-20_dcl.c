@@ -19,6 +19,7 @@ int gettoken(void);
 int tokentype;
 
 int error = 0;
+int name_found = 0;
 
  /* type of last token */
 char token[MAXTOKEN];
@@ -40,11 +41,23 @@ int main() /* convert declaration to words */
     
     while (gettoken() != EOF) {
         name[0] = '\0';
-        datatype[0] = '\0';
-        /* 1st token on line */
-        strcpy(datatype, token); /* is the datatype */
-
         out[0] = '\0';
+
+        if (is_type_keyword(token)) {
+            strcpy(datatype, token);
+        }
+        
+        while (gettoken() == NAME){
+            if (is_type_keyword(token)){
+                strcat(datatype, " ");
+                strcat(datatype, token);
+            }
+            else {
+                strcpy(name, token);
+                name_found = 1;
+            }
+        }
+        ungetch(tokentype);
 
         dcl(name, datatype, out);
 
@@ -76,7 +89,7 @@ void dcl(char *name, char *datatype, char *out)
 
     if (error) return;
 
-    for (ns = 0; gettoken() == '*'; ) /* count *'s */
+    for (ns = 0; (!name_found) && (gettoken() == '*'); ) /* count *'s */
         ns++;
     dirdcl(name, datatype, out);
     while (ns-- > 0)
@@ -89,25 +102,28 @@ void dirdcl(char *name, char *datatype, char *out)
     int type;
 
     if (error) return;
-    
-    if (tokentype == '(') {
-         /* ( dcl ) */
-        dcl(name, datatype, out);
-        if (tokentype != ')') {
-            printf("error: missing )\n");
+
+    if (!name_found) {
+        if (tokentype == '(') {
+             /* ( dcl ) */
+            dcl(name, datatype, out);
+            if (tokentype != ')') {
+                printf("error: missing )\n");
+                error = 1;
+                return;
+            }
+        } else if (tokentype == NAME) /* variable name */
+            strcpy(name, token);
+        else if (tokentype == ')') {
+            return;
+        }
+        else {
+            printf("error: expected name or (dcl)\n");
             error = 1;
             return;
         }
-    } else if (tokentype == NAME) /* variable name */
-        strcpy(name, token);
-    else if (tokentype == ')') {
-        return;
     }
-    else {
-        printf("error: expected name or (dcl)\n");
-        error = 1;
-        return;
-    }
+    name_found = 0;
 
     while ((type=gettoken()) == '(' || type == BRACKETS){
         char name_arg[MAXTOKEN];
@@ -120,8 +136,7 @@ void dirdcl(char *name, char *datatype, char *out)
             do {
                 out_arg[0] = '\0';
                 name_arg[0] = '\0';
-                gettoken();
-                if (tokentype == ')'){
+                if (gettoken() == ')'){
                     break;
                 }
                 strcpy(datatype_arg, token);
@@ -132,6 +147,7 @@ void dirdcl(char *name, char *datatype, char *out)
                     }
                     else {
                         strcpy(name_arg, token);
+                        name_found = 1;
                     }
                 }
                 ungetch(tokentype);
