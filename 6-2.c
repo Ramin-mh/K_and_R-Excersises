@@ -1,6 +1,9 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define MAXWORD 100
 
 struct treeNode {
     char *word;
@@ -25,6 +28,9 @@ struct treeNode *allocTree(void);
 void printGroup(struct groupNode *);
 void printTree(struct treeNode *);
 
+int is_type_keyword(char *s);
+int getvar(char *s);
+
 char testCases[7][8] = {
     "123456e",
     "123456d",
@@ -35,17 +41,35 @@ char testCases[7][8] = {
     "234567e",
 };
 
-int main(void){
+int main(int argc, char *argv[]){
     struct groupNode *groupRoot;
-    int n = 3;
-    int i;
+    char word[MAXWORD];
+    int n;
+
+    if (argc == 2) {
+        n = atoi(argv[1]);
+        if (n == 0) {
+            fprintf(stderr, "invalid input.\n");
+            return 1;
+        }
+    }
+    else if (argc > 2) {
+        fprintf(stderr, "invalid input.\n");
+        return 1;
+    }
+    else {
+        n = 6;
+    }
 
     groupRoot = NULL;
-    for (i = 0; i < 7; i++) {
-        groupRoot = addGroup(groupRoot, testCases[i], 6);
+    while (getvar(word) != EOF) {
+        if (strlen(word) > n) {
+            groupRoot = addGroup(groupRoot, word, n);
+        }
     }
-    printGroup(groupRoot);
 
+    printGroup(groupRoot);
+    
     return 0;
 }
 
@@ -127,4 +151,76 @@ void printTree(struct treeNode *p) {
         printf("%s\n", p->word);
         printTree(p->right);
     }
+}
+
+void skip_string_constants(int c) {
+    int k;
+
+    while ((k = getchar()) != c){
+        if (k == '\\'){
+            getchar();
+        }
+    }
+}
+
+int getvar(char *s) {
+    char tmp[MAXWORD];
+    int datatype_reached = 0;
+    int i;
+    int c;
+
+    do {
+        while (isspace((c = getchar()))) { };
+
+        if (c == EOF) break;
+
+        if (!isalpha(c)) {
+            do {
+                if (c == '"' || c == '\'') {
+                    skip_string_constants(c);
+                }
+            } while (!isalpha((c = getchar())));
+
+            if (c == EOF) break;
+        }
+        
+        if (isalpha(c)) {
+            tmp[0] = c;
+            for (i = 1; isalnum((c = getchar())); i++) {
+                tmp[i] = c;
+            }
+            tmp[i] = '\0';
+
+            if (c == EOF) break;
+
+            if (c == '"' || c == '\'') {
+                skip_string_constants(c);
+            }
+
+            if (is_type_keyword(tmp)) {
+                datatype_reached = 1;
+            }
+            else if (datatype_reached == 1) {
+                strcpy(s, tmp);
+                return s[0];
+                datatype_reached = 0;
+            }
+        }
+    } while (c != EOF);
+
+    return EOF;
+}
+
+int is_type_keyword(char *s) {
+    return strcmp(s, "int") == 0 ||
+           strcmp(s, "char") == 0 ||
+           strcmp(s, "void") == 0 ||
+           strcmp(s, "long") == 0 ||
+           strcmp(s, "short") == 0 ||
+           strcmp(s, "signed") == 0 ||
+           strcmp(s, "unsigned") == 0 ||
+           strcmp(s, "float") == 0 ||
+           strcmp(s, "double") == 0 ||
+           strcmp(s, "const") == 0 ||
+           strcmp(s, "volatile") == 0;
 }
