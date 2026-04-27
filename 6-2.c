@@ -22,11 +22,29 @@ struct groupNode *allocGroup(void);
 struct treeNode *addTree(struct treeNode *, char *);
 struct treeNode *allocTree(void);
 
+void printGroup(struct groupNode *);
+void printTree(struct treeNode *);
+
+char testCases[7][8] = {
+    "123456e",
+    "123456d",
+    "234567d",
+    "123456a",
+    "123456g",
+    "234567a",
+    "234567e",
+};
+
 int main(void){
     struct groupNode *groupRoot;
-    int n = 6;
+    int n = 3;
+    int i;
 
     groupRoot = NULL;
+    for (i = 0; i < 7; i++) {
+        groupRoot = addGroup(groupRoot, testCases[i], 6);
+    }
+    printGroup(groupRoot);
 
     return 0;
 }
@@ -79,11 +97,11 @@ struct treeNode *addTree(struct treeNode *root, char *word) {
         root->word = strdup(word);
         root->left = root->right = NULL;
     }
-    else if ((cond = strcmp(word, root->word) < 0)) {
+    else if ((cond = strcmp(word, root->word)) < 0) {
         root->left =  addTree(root->left, word);
     }
     else if (cond > 0) {
-        return addTree(root->right, word);
+        root->right = addTree(root->right, word);
     }
 
     return root;
@@ -91,4 +109,22 @@ struct treeNode *addTree(struct treeNode *root, char *word) {
 
 struct treeNode *allocTree(void) {
     return (struct treeNode *)malloc(sizeof(struct treeNode));
+}
+
+void printGroup(struct groupNode *p) {
+    if (p != NULL) {
+        printGroup(p->left);
+        printf("-----Group-----\n");
+        printTree(p->treeRoot);
+        printf("---------------\n");
+        printGroup(p->right);
+    }
+}
+
+void printTree(struct treeNode *p) {
+    if (p != NULL) {
+        printTree(p->left);
+        printf("%s\n", p->word);
+        printTree(p->right);
+    }
 }
