@@ -15,17 +15,29 @@ struct treeNode {
 
 struct treeNode *addTree(struct treeNode *p, char *w);
 void printTree(struct treeNode *p);
+void treeToArray(struct treeNode *p, struct treeNode ***arr, size_t *size);
+void printTreeArray(struct treeNode **arr, size_t len);
+int cmp_tree_count_wrapper(void *a, void *b);
+
 int getword(char *w, int lim);
+void quick_sort(void *arr, int left, int right, size_t size, int (*cmp)(void *, void *));
 
 int main(void) {
     struct treeNode *root = NULL;
     char word[MAXWORD];
 
+    struct treeNode **treeNodes = NULL;
+    size_t len = 0;
+
     while (getword(word, MAXWORD) != EOF) {
         root = addTree(root, word);
     }
 
-    printTree(root);
+    treeToArray(root, &treeNodes, &len);
+    quick_sort(treeNodes, 0, len-1, (sizeof(struct treeNode *)), cmp_tree_count_wrapper);
+
+    printf("-------------------------\n");
+    printTreeArray(treeNodes, len);
     
     return 0;
 }
@@ -55,6 +67,23 @@ struct treeNode *addTree(struct treeNode *p, char *w) {
     }
 
     return p;
+}
+
+void treeToArray(struct treeNode *p, struct treeNode ***arr, size_t *size) {
+    if (p != NULL) {
+        treeToArray(p->left, arr, size);
+        *arr = realloc(*arr, (*size + 1) * sizeof(struct treeNode *));
+        (*arr)[(*size)++] = p;
+        treeToArray(p->right, arr, size);
+    }
+}
+
+void printTreeArray(struct treeNode **arr, size_t len) {
+    int i;
+
+    for (i = 0; i < len; i++) {
+        printf("%s: %d\n", (arr[i])->word, (arr[i])->count);
+    }
 }
 
 void printTree(struct treeNode *p) {
@@ -150,4 +179,20 @@ void quick_sort(void *arr, int left, int right, size_t size, int (*cmp)(void *, 
 
     quick_sort(arr, left, last - 1, size, cmp);
     quick_sort(arr, last + 1, right, size, cmp);
+}
+
+int cmp_tree_count(struct treeNode **a, struct treeNode **b) {
+    if ((*a)->count > (*b)->count) {
+        return 1;
+    }
+    else if ((*a)->count < (*b)->count){
+        return -1;
+    }
+    else {
+        return 0;
+    }
+}
+
+int cmp_tree_count_wrapper(void *a, void *b) {
+    return cmp_tree_count((struct treeNode **)a, (struct treeNode **)b);
 }
