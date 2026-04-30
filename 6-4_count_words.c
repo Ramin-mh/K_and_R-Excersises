@@ -114,3 +114,40 @@ int getword(char *w, int lim) {
 
     return w[0];
 }
+
+void swap(void *a, void *b, size_t size) {
+    char *p = a;
+    char *q = b;
+    char tmp;
+    size_t i;
+
+    /* swap each byte untill swapped size bytes */
+    for (i = 0; i < size; i++) {
+        tmp = p[i];
+        p[i] = q[i];
+        q[i] = tmp;
+    }
+}
+
+void quick_sort(void *arr, int left, int right, size_t size, int (*cmp)(void *, void *)) {
+    char *p = arr;
+    int i, last;
+    
+    if (left >= right) {
+        return;
+    }
+
+    swap(p + left * size, p + ((left + right)/2) * size, size);
+
+    last = left;
+    for (i = left + 1; i <= right; i++) {
+        if (cmp(p + i * size, p + left * size) > 0) {
+            ++last;
+            swap(p + i * size, p + last * size, size);
+        }
+    }
+    swap(p + left * size, p + last * size, size);
+
+    quick_sort(arr, left, last - 1, size, cmp);
+    quick_sort(arr, last + 1, right, size, cmp);
+}
