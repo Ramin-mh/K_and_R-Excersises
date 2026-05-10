@@ -9,8 +9,9 @@ void minprintf(char *fmt, ...);
 int main(void)
 {
     char *s = "John";
+    char c = 'A';
     double n = 3.55;
-    minprintf("Name: %s, Age: %-3.1f\n", s, n);
+    minprintf("Name:%5.4s, Age: %3.1f\nchar:%3c\n", s, n, c);
 }
 
 void print_spaces(int n)
@@ -153,41 +154,6 @@ void minprintf(char *fmt, ...)
                 }
 
                 break;
-            case 'e':
-                dval = va_arg(ap, double);
-
-                len = snprintf(NULL, 0, "%e", dval);
-
-                if (pad > len)
-                {
-                    print_spaces(pad - len);
-                }
-
-                printf("%e", dval);
-
-                if (-pad > len)
-                {
-                    print_spaces((-pad) - len);
-                }
-
-                break;
-            case 'E':
-                dval = va_arg(ap, double);
-                len = snprintf(NULL, 0, "%E", dval);
-
-                if (pad > len)
-                {
-                    print_spaces(pad - len);
-                }
-
-                printf("%E", dval);
-
-                if (-pad > len)
-                {
-                    print_spaces((-pad) - len);
-                }
-
-                break;
             case 'c':
                 ival = va_arg(ap, int);
                 len = snprintf(NULL, 0, "%c", ival);
@@ -209,63 +175,25 @@ void minprintf(char *fmt, ...)
                 sval = va_arg(ap, char *);
                 len = snprintf(NULL, 0, "%s", sval);
 
-                if (pad > len)
-                {
-                    print_spaces(pad - len);
-                }
-
-                printf("%s", sval);
-
-                if (-pad > len)
-                {
-                    print_spaces((-pad) - len);
-                }
-
-                break;
-            case 'o':
-                ival = va_arg(ap, int);
-                len = snprintf(NULL, 0, "%o", ival);
+                if (precicion >= 0 && len > precicion)
+                    len = precicion;
 
                 if (pad > len)
                 {
                     print_spaces(pad - len);
                 }
 
-                printf("%o", ival);
-
-                if (-pad > len)
+                if (precicion >= 0)
                 {
-                    print_spaces((-pad) - len);
+                    for (; *sval && precicion; sval++, precicion--)
+                    {
+                        putchar(*sval);
+                    }
                 }
-                
-                break;
-            case 'x':
-                ival = va_arg(ap, int);
-                len = snprintf(NULL, 0, "%o", ival);
-
-                if (pad > len)
-                {
-                    print_spaces(pad - len);
+                else {
+                    for (; *sval; sval++)
+                        putchar(*sval);
                 }
-
-                printf("%x", ival);
-                
-                if (-pad > len)
-                {
-                    print_spaces((-pad) - len);
-                }
-
-                break;
-            case 'X':
-                ival = va_arg(ap, int);
-                len = snprintf(NULL, 0, "%X", ival);
-
-                if (pad > len)
-                {
-                    print_spaces(pad - len);
-                }
-
-                printf("%X", ival);
 
                 if (-pad > len)
                 {
