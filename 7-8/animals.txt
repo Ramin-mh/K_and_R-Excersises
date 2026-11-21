@@ -1,0 +1,5 @@
+Chicken is food
+Cow gives milk
+Tiger is a carnivore
+Goat is an herbivore
+Camel is a vehicle
